@@ -39,14 +39,20 @@ function Handles({ item, startResize, startRotate }) {
         <div
           key={i}
           data-interactive
-          onPointerDown={(e) => startResize(item.id, e)}
+          onPointerDown={(e) => {
+            e.stopPropagation(); // 防止冒泡到 main 触发 deselect
+            startResize(item.id, e);
+          }}
           style={{ ...common, ...a.pos, cursor: a.cursor }}
         />
       ))}
       {/* 顶部旋转手柄（圆形） */}
       <div
         data-interactive
-        onPointerDown={(e) => startRotate(item.id, e)}
+        onPointerDown={(e) => {
+          e.stopPropagation(); // 防止冒泡到 main 触发 deselect
+          startRotate(item.id, e);
+        }}
         style={{
           position: 'absolute',
           left: half - 8,
@@ -121,7 +127,10 @@ export default function DecorativeEditor({
       {/* 编辑框主体（可拖动移动） */}
       <div
         data-interactive
-        onPointerDown={(e) => startMove(sel.id, e)}
+        onPointerDown={(e) => {
+          e.stopPropagation(); // 防止冒泡到 main 触发 deselect，抢走编辑框交互
+          startMove(sel.id, e);
+        }}
         style={{
           position: 'absolute',
           left: -half,

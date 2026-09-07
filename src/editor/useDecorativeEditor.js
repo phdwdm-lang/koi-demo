@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   STORAGE_KEY,
   loadLayout,
@@ -8,11 +8,13 @@ import {
 } from './editorState.js';
 
 // 装饰图层编辑器的核心状态 hook：集中管理素材列表与所有编辑操作。
+// 拖拽状态用 useRef 存储，避免 useState + 事件监听器组合导致的闭包失效 bug。
 export function useDecorativeEditor() {
   const [items, setItems] = useState(() => loadLayout());
   const [selectedId, setSelectedId] = useState(null);
   const [savedAt, setSavedAt] = useState(null);
-  const [drag, setDrag] = useState(null); // 当前拖拽状态 {mode,id,startX,startY,orig:{...},cx,cy,startAngle}
+  // 拖拽进行时的状态（不触发重渲染，事件回调里读取它即可获得最新值）
+  const dragRef = useRef(null);
 
   // ---- 基础更新 ----
   const updateById = useCallback((id, patch) => {
@@ -92,48 +94,49 @@ export function useDecorativeEditor() {
     });
   }, [selectedId]);
 
-  // ---- 拖拽（移动/缩放/旋转）统一处理 ----
-  const onDragMove = useCallback(
-    (e) => {
-      if (!drag) return;
-      const vmin = Math.min(window.innerWidth, window.innerHeight);
-      const { mode, id, startX, startY, orig, cx, cy, startAngle, origRot } = drag;
-      if (mode === 'move') {
-        const dx = ((e.clientX - startX) / window.innerWidth) * 100;
-        const dy = ((e.clientY - startY) / window.innerHeight) * 100;
-        updateById(id, {
-          x: Math.max(0, Math.min(100, orig.x + dx)),
-          y: Math.max(0, Math.min(100, orig.y + dy)),
-        });
-      } else if (mode === 'resize') {
-        const deltaV = ((e.clientX - startX) / vmin) * 100;
-        updateById(id, { w: Math.max(8, Math.min(90, orig.w + deltaV)) });
-      } else if (mode === 'rotate') {
-        const ang = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI;
-        let newRot = ((origRot + (ang - startAngle) % 360 + 360)) % 360;
-        updateById(id, { rotation: newRot });
-      }
-    },
-    [drag, updateById]
-  );
+  // ---- 拖拽（移动/缩放/旋转）统一处理：事件回调统一用稳定函数，读 dragRef 拿最新值 ----
+  const onDragMove = useCallback((e) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const vmin = Math.min(window.innerWidth, window.innerHeight);
+    const { mode, id, startX, startY, orig, cx, cy, startAngle, origRot } = d;
+    if (mode === 'move') {
+      const dx = ((e.clientX - startX) / window.innerWidth) * 100;
+      const dy = ((e.clientY - startY) / window.innerHeight) * 100;
+      updateById(id, {
+        x: Math.max(0, Math.min(100, orig.x + dx)),
+        y: Math.max(0, Math.min(100, orig.y + dy)),
+      });
+    } else if (mode === 'resize') {
+      const deltaV = ((e.clientX - startX) / vmin) * 100;
+      updateById(id, { w: Math.max(8, Math.min(90, orig.w + deltaV)) });
+    } else if (mode === 'rotate') {
+      const ang = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI;
+      let newRot = (origRot + (ang - startAngle)) % 360;
+      if (newRot < 0) newRot += 360;
+      updateById(id, { rotation: newRot });
+    }
+  }, [updateById]);
 
   const onDragEnd = useCallback(() => {
-    setDrag(null);
-  }, []);
+    dragRef.current = null;
+    window.removeEventListener('pointermove', onDragMove);
+    window.removeEventListener('pointerup', onDragEnd);
+  }, [onDragMove]);
 
-  // 各手势入口（记录起始态）
+  // 各手势入口：先把起始态写进 dragRef，再绑定事件。事件回调引用稳定，读 dragRef 拿最新值。
   const startMove = useCallback(
     (id, e) => {
       e.preventDefault();
       const target = items.find((it) => it.id === id);
       if (!target) return;
-      setDrag({
+      dragRef.current = {
         mode: 'move',
         id,
         startX: e.clientX,
         startY: e.clientY,
         orig: { x: target.x, y: target.y },
-      });
+      };
       window.addEventListener('pointermove', onDragMove);
       window.addEventListener('pointerup', onDragEnd);
     },
@@ -146,7 +149,7 @@ export function useDecorativeEditor() {
       e.stopPropagation();
       const target = items.find((it) => it.id === id);
       if (!target) return;
-      setDrag({ mode: 'resize', id, startX: e.clientX, startY: e.clientY, orig: { w: target.w } });
+      dragRef.current = { mode: 'resize', id, startX: e.clientX, startY: e.clientY, orig: { w: target.w } };
       window.addEventListener('pointermove', onDragMove);
       window.addEventListener('pointerup', onDragEnd);
     },
@@ -162,7 +165,7 @@ export function useDecorativeEditor() {
       const cx = (target.x / 100) * window.innerWidth;
       const cy = (target.y / 100) * window.innerHeight;
       const startAngle = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI;
-      setDrag({ mode: 'rotate', id, cx, cy, startAngle, origRot: target.rotation });
+      dragRef.current = { mode: 'rotate', id, cx, cy, startAngle, origRot: target.rotation };
       window.addEventListener('pointermove', onDragMove);
       window.addEventListener('pointerup', onDragEnd);
     },
@@ -196,7 +199,6 @@ export function useDecorativeEditor() {
     items,
     selectedId,
     savedAt,
-    drag,
     select,
     deselect,
     updateById,
