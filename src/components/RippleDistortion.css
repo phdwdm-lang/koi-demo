@@ -3,7 +3,8 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #000;
+  /* 涟漪折射层背景改为透明，避免黑色兜底遮挡下层(鱼池/荷叶素材)内容 */
+  background: transparent;
 }
 
 .ripple-distortion canvas {
