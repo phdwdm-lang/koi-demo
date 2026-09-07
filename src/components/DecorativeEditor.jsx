@@ -38,12 +38,14 @@ function Handles({ item, startResize, startRotate }) {
       {anchors.map((a, i) => (
         <div
           key={i}
+          data-interactive
           onPointerDown={(e) => startResize(item.id, e)}
           style={{ ...common, ...a.pos, cursor: a.cursor }}
         />
       ))}
       {/* 顶部旋转手柄（圆形） */}
       <div
+        data-interactive
         onPointerDown={(e) => startRotate(item.id, e)}
         style={{
           position: 'absolute',
@@ -118,6 +120,7 @@ export default function DecorativeEditor({
     >
       {/* 编辑框主体（可拖动移动） */}
       <div
+        data-interactive
         onPointerDown={(e) => startMove(sel.id, e)}
         style={{
           position: 'absolute',
@@ -138,6 +141,7 @@ export default function DecorativeEditor({
 
       {/* 操作条：复制 / 删除 / 置顶 / 置底 */}
       <div
+        data-interactive
         style={{
           position: 'absolute',
           left: -half,
