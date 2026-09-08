@@ -13,29 +13,30 @@
  * （用户把这份配置发给 AI，即可把参数写死进 KoiPond.jsx 初始值）。
  */
 import { useEffect, useState } from 'react';
+import { DEFAULT_FISH } from '../config/koiConfig.js';
 
 // 默认值（与 KoiPond.jsx 初始 createWorld / ui / __koiShadow 一致）
 const DEFAULT = {
-  count: 4,
-  fishScale: 0.3,
-  maxSpeed: 172,
-  minSpeed: 32,
-  maxForce: 220,
-  turnRate: 4.4,
-  fovDeg: 285,
-  neighborRadius: 70,
-  separationRadius: 90,
-  wSep: 3.2,
-  wAli: 0.7,
-  wCoh: 0.3,
-  wGoal: 2.45,
-  wWander: 0.2,
-  shadow: { x: 12, y: 30, blur: 5, alpha: 0.2 },
+  count: DEFAULT_FISH.count,
+  fishScale: DEFAULT_FISH.fishScale,
+  maxSpeed: DEFAULT_FISH.maxSpeed,
+  minSpeed: DEFAULT_FISH.minSpeed,
+  maxForce: DEFAULT_FISH.maxForce,
+  turnRate: DEFAULT_FISH.turnRate,
+  fovDeg: DEFAULT_FISH.fovDeg,
+  neighborRadius: DEFAULT_FISH.neighborRadius,
+  separationRadius: DEFAULT_FISH.separationRadius,
+  wSep: DEFAULT_FISH.wSep,
+  wAli: DEFAULT_FISH.wAli,
+  wCoh: DEFAULT_FISH.wCoh,
+  wGoal: DEFAULT_FISH.wGoal,
+  wWander: DEFAULT_FISH.wWander,
+  shadow: { ...DEFAULT_FISH.shadow },
 };
 
 // 滑块定义：[key, label, min, max, step]
 const SLIDERS = [
-  ['count', '鱼数量 count', 1, 30, 1],
+  ['count', '鱼数量 count', 1, 15, 1],
   ['fishScale', '鱼体大小 fishScale', 0.1, 0.9, 0.01],
   ['maxSpeed', '巡游速度 maxSpeed', 40, 260, 4],
   ['minSpeed', '最低速度 minSpeed', 20, 120, 4],

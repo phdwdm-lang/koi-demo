@@ -54,7 +54,7 @@ export function nextId(prefix = 'decor') {
 
 // 预置一个好看的默认布局（错落摆放：底部几片大荷叶 + 侧叶 + 几朵花/花苞）
 function defaultLayout() {
-  const make = (src, x, y, w, rotation, extra = {}) => ({
+  const make = (src, x, y, w, rotation, z, extra = {}) => ({
     id: nextId(),
     src,
     x,
@@ -64,21 +64,25 @@ function defaultLayout() {
     flipX: false,
     opacity: 1,
     selected: false,
-    z: 1,
+    z,
     ...extra,
   });
+  // 默认布局固化自用户导出的 koi-decor-layout.json（顺序 = order 递增）
   return [
-    // 底层：大荷叶铺排（z 低，位于水面）
-    make('/decor/leaf-04.png', 20, 78, 42, -8),
-    make('/decor/leaf-01.png', 55, 82, 46, 6),
-    make('/decor/leaf-05.png', 84, 74, 34, 12),
-    make('/decor/leaf-side-01.png', 36, 60, 30, -16),
-    make('/decor/leaf-side-02.png', 68, 60, 28, 14),
-    // 中层：花与花苞（z 略高于叶，随摆位）
-    make('/decor/bloom-01.png', 30, 34, 22, -4, { z: 3 }),
-    make('/decor/bloom-03.png', 72, 30, 20, 8, { z: 3 }),
-    make('/decor/bud-01.png', 50, 44, 16, 2, { z: 2 }),
-    make('/decor/bud-02.png', 88, 40, 14, -10, { z: 2 }),
+    make('/decor/leaf-04.png', 94.583, 83.350, 39.797, 332.743, 1),
+    make('/decor/leaf-05.png', 69.938, 47.040, 16.638, 12, 1),
+    make('/decor/bloom-03.png', 94.474, 92.680, 20, 352.142, 3),
+    make('/decor/bud-01.png', 9.870, 96.557, 12.119, 17.945, 2),
+    make('/decor/bud-02.png', 91.177, 96.911, 14, 337.241, 5),
+    make('/decor/leaf-03.png', 96.553, 93.509, 32.543, 356.189, -1),
+    make('/decor/leaf-05.png', 29.901, 30.321, 24.559, 12, 6),
+    make('/decor/bloom-04.png', 21.706, 62.732, 11.772, -0.579, 8),
+    make('/decor/leaf-04.png', 1.264, 27.498, 18.486, 35.315, -3),
+    make('/decor/leaf-01.png', 5.750, 92.166, 22, 12.558, -2),
+    make('/decor/leaf-02.png', 4.427, 85.780, 38.680, 9.229, 11),
+    make('/decor/bloom-02.png', 7.578, 91.676, 24.937, 357.301, 12),
+    make('/decor/leaf-05.png', 48.577, 69.757, 12.821, 1.841, 13),
+    make('/decor/bloom-04.png', 78.753, 14.694, 8, 4.696, 14),
   ];
 }
 

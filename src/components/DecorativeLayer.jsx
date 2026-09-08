@@ -46,7 +46,7 @@ export default function DecorativeLayer({ items, selectedId, onSelect, onBodyPoi
               opacity: it.opacity,
               zIndex: it.z,
               cursor: 'pointer',
-              pointerEvents: isSel ? 'none' : 'auto', // 选中后由编辑框接管，避免素材自身与手柄冲突
+              pointerEvents: preview ? 'none' : (isSel ? 'none' : 'auto'), // 选中后由编辑框接管，避免素材自身与手柄冲突
               userSelect: 'none',
               display: 'flex',
               alignItems: 'center',
@@ -62,6 +62,8 @@ export default function DecorativeLayer({ items, selectedId, onSelect, onBodyPoi
                 height: '100%',
                 objectFit: 'contain',
                 pointerEvents: 'none',
+                // 与鱼影一致的右下偏移投影：右下偏移 + 模糊 + 深绿黑 + 半透明
+                filter: 'drop-shadow(16px 30px 10px rgba(26,61,48,0.38))',
               }}
             />
           </div>

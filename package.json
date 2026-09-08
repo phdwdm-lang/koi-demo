@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:lib": "vite build --config vite.lib.config.js"
   },
   "dependencies": {
     "ogl": "^1.0.11",
@@ -20,5 +21,18 @@
     "@vitejs/plugin-react": "^6.1.0",
     "oxlint": "^1.79.0",
     "vite": "^8.2.2"
-  }
+  },
+  "description": "锦鲤动效 · 配置生成 + 发布化（可嵌入组件 / npm 包）",
+  "main": "dist-lib/koi-viewer.umd.cjs",
+  "module": "dist-lib/koi-viewer.js",
+  "exports": {
+    ".": {
+      "import": "./dist-lib/koi-viewer.js",
+      "require": "./dist-lib/koi-viewer.umd.cjs"
+    }
+  },
+  "files": [
+    "dist-lib",
+    "src"
+  ]
 }

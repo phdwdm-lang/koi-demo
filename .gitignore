@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# CDP 调试 Chrome profile 与库构建产物，上传前排除
+.cdp-profile*
+dist-lib/

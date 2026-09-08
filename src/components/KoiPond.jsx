@@ -24,6 +24,7 @@ import {
   removeFish,
   setObstacles,
 } from './index.js';
+import { DEFAULT_FISH } from '../config/koiConfig.js';
 
 // 素材改为 public 绝对路径：当前 Turbopack 构建对 `import ... .png` 静态资源解析失效
 // （图片无法加载，导致背景/荷叶/荷花都不显示），改成「复制到 public/ + 绝对 URL」即可正常加载。
@@ -38,12 +39,15 @@ const bloom03 = '/lotus-bloom-03.png';
 const bud01 = '/lotus-bud-01.png';
 const bud02 = '/lotus-bud-02.png';
 
-const KoiPond = ({ canvasRef, className = '', style }) => {
+const KoiPond = ({ canvasRef, className = '', style, titleShadowText = '', headerSubs = [], fish = DEFAULT_FISH }) => {
   useEffect(() => {
     const canvas = canvasRef?.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    // 投影主色：鱼影 / 标题投影 / 荷叶投影 共用（必须位于闭包内，loop 与 drawFishKoi 都引用）
+    const SHADOW_C = 'rgba(26,61,48,1)';
 
     let W = 0;
     let H = 0;
@@ -52,9 +56,9 @@ const KoiPond = ({ canvasRef, className = '', style }) => {
     let raf = 0;
     let last = performance.now();
 
-    const ui = { fishScale: 0.3 }; // 鱼体量系数（默认，同 demo）
+    const ui = { fishScale: fish.fishScale }; // 鱼体量系数（默认，同 demo）
     // 投影配置：恒定右下偏移 + 大 blur + 低透明度 → 深水悬浮感（单层投影）
-    globalThis.__koiShadow = { x: 12, y: 30, blur: 5, alpha: 0.2 };
+    globalThis.__koiShadow = { ...fish.shadow };
 
     // ============ 素材加载（水彩贴图，懒加载：绘制时检查 naturalWidth）============
     const SPR = {
@@ -193,8 +197,16 @@ const KoiPond = ({ canvasRef, className = '', style }) => {
 
     function resize() {
       DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-      W = Math.floor(canvas.clientWidth || window.innerWidth);
-      H = Math.floor(canvas.clientHeight || window.innerHeight);
+      // 用「视口」作为兜底而不是 canvas.clientWidth：canvas 用 width:100% 依赖父容器，
+      // 布局未完成时 clientWidth/clientHeight 可能读到 0 或极小值，导致画面缩成一小块。
+      const vw = document.documentElement.clientWidth || window.innerWidth;
+      const vh = document.documentElement.clientHeight || window.innerHeight;
+      const cw = canvas.clientWidth || vw;
+      const ch = canvas.clientHeight || vh;
+      W = Math.floor(Math.min(cw, vw) > 50 ? cw : vw); // 防止读到异常小值
+      H = Math.floor(Math.min(ch, vh) > 50 ? ch : vh);
+      W = Math.max(100, W);
+      H = Math.max(100, H);
       canvas.width = Math.floor(W * DPR);
       canvas.height = Math.floor(H * DPR);
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
@@ -273,7 +285,6 @@ const KoiPond = ({ canvasRef, className = '', style }) => {
       const shiftY = shadow ? (o.shiftY ?? 8) : 0;
       const alpha = shadow ? (o.alpha ?? 0.3) : 1;
       const SH = globalThis.__koiShadow ?? { x: 4, y: 8, blur: 12, alpha: 0.3 };
-      const SHADOW_C = 'rgba(26,61,48,1)';
 
       const KOI = { white: 'rgba(246,241,230,1)', red: 'rgba(228,91,44,1)', black: 'rgba(20,20,22,1)' };
       const bodyBase = shadow ? SHADOW_C : KOI.white;
@@ -532,6 +543,49 @@ const KoiPond = ({ canvasRef, className = '', style }) => {
       drawGoal();
       const snaps = world.fish.map((f) => snapshotFish(f, t));
       for (const f of snaps) drawFish(f);
+
+      // 标题与说明文字投影：画进鱼池 canvas，随涟漪一起被折射
+      // 采用与鱼影一致的「右下偏移」投影（__koiShadow: x/y/blur/alpha），而非镜像倒影
+      if (titleShadowText) {
+        const SH = globalThis.__koiShadow ?? { x: 12, y: 30, blur: 5, alpha: 0.2 };
+        const cx = W / 2;
+        // 与 App.jsx 头部文案对齐：paddingTop 12vh + 标题/两行说明的纵向排布
+        const headTop = H * 0.12;
+        const TITLE_FS = 28;   // 与 App.jsx 头部 h1 保持一致
+        const SUB_FS_1 = 13;   // 与 App.jsx 头部 p1 保持一致
+        const SUB_FS_2 = 12;   // 与 App.jsx 头部 p2 保持一致
+        const TITLE_COLOR = '#2e4a3e'; // 与 App.jsx 头部正文颜色一致
+        const lines = [
+          { text: titleShadowText, y: headTop + 16, fs: TITLE_FS, weight: 600, alpha: 0.85, ls: 8 },
+          ...(headerSubs && headerSubs[0] ? [{ text: headerSubs[0], y: headTop + 16 + TITLE_FS * 1.4 + 12 + 8, fs: SUB_FS_1, weight: 400, alpha: 0.6, ls: 3 }] : []),
+          ...(headerSubs && headerSubs[1] ? [{ text: headerSubs[1], y: headTop + 16 + TITLE_FS * 1.4 + 12 + 16 + SUB_FS_1 * 1.4 + 6 + 7, fs: SUB_FS_2, weight: 400, alpha: 0.5, ls: 2 }] : []),
+        ];
+        const drawLine = (ln, mode) => {
+          ctx.save();
+          ctx.font = ln.weight + ' ' + ln.fs + 'px "Songti SC", "STSong", "SimSun", serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          if ('letterSpacing' in ctx) ctx.letterSpacing = ln.ls + 'px';
+          if (mode === 'shadow') {
+            // 右下偏移投影（与鱼影共用同一套偏移/模糊/透明度体系）
+            ctx.translate(cx + SH.x, ln.y + SH.y);
+            ctx.globalAlpha = SH.alpha * ln.alpha;
+            ctx.fillStyle = SHADOW_C;
+            if (SH.blur) ctx.filter = 'blur(' + SH.blur + 'px)';
+          } else {
+            // 标题本体（清晰居中，画进鱼池 canvas 从而随涟漪被折射）
+            ctx.translate(cx, ln.y);
+            ctx.globalAlpha = ln.alpha;
+            ctx.fillStyle = TITLE_COLOR;
+          }
+          ctx.fillText(ln.text, 0, 0);
+          ctx.restore();
+        };
+        // 先投影（右下偏移模糊），再本体（清晰居中）→ 本体在最上
+        for (const ln of lines) drawLine(ln, 'shadow');
+        for (const ln of lines) drawLine(ln, 'body');
+        if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+      }
       // 【临时】移除所有荷花和荷叶（drawLilyPad / drawLotus），观察无植物的水域效果
       // for (const lp of decorLeaves) drawLilyPad(lp);
       // for (const l of lotuses) drawLotus(l);
@@ -540,22 +594,28 @@ const KoiPond = ({ canvasRef, className = '', style }) => {
     }
 
     // ============ 初始化 ============
+    // 同步首轮 resize：确保 createWorld 拿到正确的 W/H。
     resize();
-    world = createWorld(W, H, 4, {
+    // 布局完全就绪后再强制校正一次，兜底「首帧 clientWidth 读到 0/极小值」导致的画面缩块。
+    const doRecheck = () => resize();
+    if (document.readyState === 'complete') requestAnimationFrame(doRecheck);
+    else window.addEventListener('load', () => requestAnimationFrame(doRecheck), { once: true });
+    setTimeout(doRecheck, 0);
+    world = createWorld(W, H, fish.count, {
       ...DEFAULT_PARAMS,
-      count: 4,
-      minSpeed: 32,
-      maxSpeed: 172,
-      maxForce: 220,
-      turnRate: 4.4,
-      fovDeg: 285,
-      neighborRadius: 70,
-      separationRadius: 90,
-      wSep: 3.2,
-      wAli: 0.7,
-      wCoh: 0.3,
-      wGoal: 2.45,
-      wWander: 0.2,
+      count: fish.count,
+      minSpeed: fish.minSpeed,
+      maxSpeed: fish.maxSpeed,
+      maxForce: fish.maxForce,
+      turnRate: fish.turnRate,
+      fovDeg: fish.fovDeg,
+      neighborRadius: fish.neighborRadius,
+      separationRadius: fish.separationRadius,
+      wSep: fish.wSep,
+      wAli: fish.wAli,
+      wCoh: fish.wCoh,
+      wGoal: fish.wGoal,
+      wWander: fish.wWander,
       chainMaxBend: Math.PI / 9,
     });
     window.__koiWorld = world;

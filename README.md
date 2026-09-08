@@ -37,7 +37,8 @@ npm run dev      # 开发预览 → http://localhost:5173
 其他脚本：
 
 ```bash
-npm run build    # 生产构建 → dist/
+npm run build    # 生产构建（测试页/正式动效）→ dist/
+npm run build:lib # 构建可嵌入 bundle（npm 组件）→ dist-lib/
 npm run preview  # 预览构建产物
 npm run lint     # oxlint 检查
 ```
@@ -49,6 +50,19 @@ npm run lint     # oxlint 检查
 3. 右上角**参数控制台**：拖拽滑杆实时调参，`复制配置` 可将当前参数导出为 JSON 固化。
 4. 鸭子光标仅在「背景水面」上显示；鼠标移到可交互元素上时会切换回系统光标。
 
+## 🎯 发布工作流（测试页 → 导出配置 → AI → 正式动效）
+
+把 koi-demo 定位从「编辑器 demo」升级为「配置生成 + 发布化」：
+
+1. 本地部署并打开**测试页**（默认即编辑器态）：微调荷叶/荷花、涟漪、鱼数量与游动。
+2. 点工具条「**⧉ 导出配置**」——一键把当前 `decor / ripple / fish` 三块参数，**复制**成一份统一 JSON（非下载），发给 AI。
+3. AI 拿到 JSON 后，**按块拆分**分别写入源码：`decor → src/editor/editorState.js(默认布局)`、`ripple → src/App.jsx(DEFAULT_RIPPLE)`、`fish → src/components/KoiPond.jsx / src/config/koiConfig.js(DEFAULT_FISH)`（而非整份替换，更安全），并改写 `src/koi.config.js`。
+4. 重新构建得到**无任何编辑功能**的正式动效。
+
+**形态开关**：URL 参数控制。
+- `?mode=view` → 正式动效：隐藏全部编辑面板、禁用画布编辑、系统光标，仅纯观赏 + 荷叶/荷花。
+- `?mode=edit`（或无参数）→ 编辑器测试页。
+
 ## 🧩 目录结构
 
 ```
@@ -57,8 +71,13 @@ koi-demo/
 ├─ src/
 │  ├─ App.jsx                       # 单页入口（无导航栏）
 │  ├─ main.jsx
+│  ├─ lib.js                        # 可嵌入 bundle 入口（导出 KoiPondViewer / koiConfig）
+│  ├─ koi.config.js                 # 正式动效唯一配置来源（decor/ripple/fish）
 │  ├─ index.css                     # 全屏 / cursor:none 基础样式
+│  ├─ config/
+│  │  └─ koiConfig.js               # 统一配置协议：默认值 + buildConfig + toJSON + 运行时读取
 │  └─ components/
+│     ├─ KoiPondViewer.jsx          # 正式动效纯渲染入口（读 config，无编辑）
 │     ├─ KoiPond.jsx                # 锦鲤鱼群主组件（Canvas + Boids 接入）
 │     ├─ index.js                   # 核心引擎（建世界 / 步进 / 快照）
 │     ├─ boids.js                   # Boids 涌现算法
@@ -92,3 +111,16 @@ koi-demo/
 - 鱼群算法灵感源自 [Boids](https://en.wikipedia.org/wiki/Boids)（Craig Reynolds）
 - 折射涟漪参考 `ogl` 官方示例
 - 素材来自 Koi-Fish-Pond（MIT）
+## 🧩 作为可嵌入组件 / npm 包使用
+
+`build:lib` 会产出 `dist-lib/`（ESM + UMD）入口，暴露 `KoiPondViewer`（读 config 的纯观赏组件）与 `koiConfig`（正式动效唯一配置来源）。
+
+```js
+import { KoiPondViewer, koiConfig } from 'koi-demo';
+
+// 不带 config → 自动读 src/koi.config.js；也可显式传入 config
+<KoiPondViewer config={koiConfig} />
+```
+
+> 素材（`/bg-koi-pond.png`、`/decor/*.png`、`lotus-*.png`）随构建打包，嵌入时需一并提供对应静态资源。
+

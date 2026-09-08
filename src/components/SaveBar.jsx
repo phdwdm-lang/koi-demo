@@ -4,14 +4,24 @@
 import { useState } from 'react';
 import { DECOR_MATERIALS } from '../editor/editorState.js';
 
-export default function SaveBar({ onSave, onExport, onReset, onAddItem, savedAt, children }) {
+export default function SaveBar({ onSave, onExport, onExportConfig, onReset, onAddItem, savedAt, children }) {
   const [libOpen, setLibOpen] = useState(false);
   const [saveFlash, setSaveFlash] = useState(false);
+  const [exportFlash, setExportFlash] = useState(false);
 
   const handleSave = () => {
     onSave();
     setSaveFlash(true);
     setTimeout(() => setSaveFlash(false), 1200);
+  };
+
+  // 导出完整配置：复制 JSON 到剪贴板给 AI，成功后闪现反馈
+  const handleExportConfig = async () => {
+    const ok = await onExportConfig?.();
+    if (ok) {
+      setExportFlash(true);
+      setTimeout(() => setExportFlash(false), 1600);
+    }
   };
 
   return (
@@ -46,6 +56,9 @@ export default function SaveBar({ onSave, onExport, onReset, onAddItem, savedAt,
           {saveFlash ? '✓ 已保存' : '💾 保存'}
         </ToolBtn>
         <ToolBtn onClick={onExport}>⤓ 导出 JSON</ToolBtn>
+        <ToolBtn onClick={handleExportConfig} accent={exportFlash} title="复制完整配置(素材+涟漪+鱼)到剪贴板，发给 AI 配置">
+          {exportFlash ? '✓ 已复制' : '⧉ 导出配置'}
+        </ToolBtn>
         <ToolBtn onClick={onReset}>↺ 恢复默认</ToolBtn>
         {children}
       </div>
