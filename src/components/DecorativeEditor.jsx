@@ -151,6 +151,7 @@ export default function DecorativeEditor({
       {/* 操作条：复制 / 删除 / 置顶 / 置底 */}
       <div
         data-interactive
+        onPointerDown={(e) => e.stopPropagation()}
         style={{
           position: 'absolute',
           left: -half,
