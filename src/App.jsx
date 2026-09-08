@@ -92,7 +92,7 @@ export default function App() {
         inset: 0,
         overflow: 'hidden',
         background: '#cfe8dc',
-        cursor: viewMode ? 'auto' : 'none',
+        cursor: 'none',
       }}
       onPointerDown={handleCanvasPointerDown}
     >
@@ -208,10 +208,11 @@ export default function App() {
       </button>
       )}
 
-      {/* 将系统鼠标替换为鸭子，头部朝向鼠标移动方向（仅编辑态；正式动效用系统光标） */}
-      {!viewMode && <DuckCursor />}
         </>
       )}
+
+      {/* 将系统鼠标替换为鸭子，头部朝向鼠标移动方向（编辑态与观模式） */}
+      <DuckCursor />
     </main>
   );
 }
